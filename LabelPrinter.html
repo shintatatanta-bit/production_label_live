@@ -100,12 +100,6 @@
       cursor: not-allowed;
     }
 
-    /* 日付操作ボタンのグループ */
-    .date-shortcut-group {
-      display: inline-flex;
-      gap: 2px;
-    }
-
     /* 日付操作ボタンの全体コンテナ（横並び） */
     .date-shortcut-container {
       display: inline-flex;
@@ -953,6 +947,29 @@
       };
 
       itemRows.push(item);
+      renderItemRowsUI();
+      updatePreview();
+    }
+
+    // 行削除機能
+    function removeItemRow(rowId) {
+      itemRows = itemRows.filter(r => r.id !== rowId);
+      renderItemRowsUI();
+      updatePreview();
+    }
+
+    // 残りの空白面に適用する関数
+    function fillItemToFull(rowId) {
+      const item = itemRows.find(r => r.id === rowId);
+      if (!item) return;
+
+      let otherRowsTotal = 0;
+      itemRows.forEach(r => {
+        if (r.id !== rowId) otherRowsTotal += (r.qty || 0);
+      });
+
+      const remain = Math.max(1, 95 - startSlotIndex - otherRowsTotal);
+      item.qty = remain;
       renderItemRowsUI();
       updatePreview();
     }

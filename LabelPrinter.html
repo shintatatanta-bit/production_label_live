@@ -1447,12 +1447,13 @@
               <div class="cell-stamp-value-overlay">${escapeHtml(expText)}</div>
             </div>
           `;
-        } else {
-          cell.onclick = function() {
-            startSlotIndex = slot;
-            updatePreview();
-          };
         }
+
+        // 配置済み・空き枠にかかわらず、クリックした位置を開始位置にする
+        cell.onclick = function() {
+          startSlotIndex = slot;
+          updatePreview();
+        };
 
         gridDiv.appendChild(cell);
       }

@@ -1259,13 +1259,15 @@
       }
     }
 
-    // ① 空欄チェックを外したら日付を空欄にする
+    // ① 空欄チェックを外したら自動で操作日の1年後をセットする
     function onBlankToggle(rowId, checked) {
       const item = itemRows.find(r => r.id === rowId);
       if (item) {
         item.isBlank = checked;
         if (!checked) {
-          item.expiryDate = '';
+          const d = new Date();
+          d.setFullYear(d.getFullYear() + 1);
+          item.expiryDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
         renderItemRowsUI();
         updatePreview();

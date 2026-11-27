@@ -782,6 +782,38 @@
       border-radius: 6px;
       cursor: pointer;
     }
+
+    /* G1〜G300用の青色ラベル */
+    .label-cell.is-blue-label,
+    .label-cell.is-blue-label .cell-code-box {
+      background: #81d4fa !important;
+    }
+
+    /* 商品リストが増えすぎたときに内部スクロールにする */
+    #itemsContainer {
+      max-height: 210px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    /* 折りたたみ時のスタイル（商品リストとステータスバーを隠す） */
+    .control-panel.is-collapsed #itemsContainer,
+    .control-panel.is-collapsed .status-bar {
+      display: none !important;
+    }
+    .control-panel.is-collapsed {
+      padding: 6px 16px;
+    }
+
+    /* 開閉ボタン */
+    .btn-toggle-panel {
+      background: #e8f0fe;
+      color: #1a73e8;
+      border: 1px solid #c2e7ff;
+    }
+    .btn-toggle-panel:hover {
+      background: #d2e3fc;
+    }
   </style>
 </head>
 <body>
@@ -792,6 +824,7 @@
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
       <div style="display:flex; align-items:center; gap:10px;">
+        <button type="button" class="btn btn-toggle-panel" id="btnTogglePanel" onclick="toggleControlPanel()">▲ 折りたたむ</button>
         <button type="button" class="btn btn-add-line" id="btnAddLine" onclick="addNewItemRow()">＋ 商品を追加</button>
         <span style="font-size:12px; font-weight:bold;" id="lblTotalUsage">合計: 0 / 95枚 (残り 95枚)</span>
       </div>
@@ -986,10 +1019,20 @@
         .getAllProductMaster();
     };
 
+    // 上部パネルの折りたたみ切り替え
+    function toggleControlPanel() {
+      const panel = document.getElementById('topControlPanel');
+      const btn = document.getElementById('btnTogglePanel');
+      const isCollapsed = panel.classList.toggle('is-collapsed');
+      btn.innerText = isCollapsed ? '▼ 入力欄を開く' : '▲ 折りたたむ';
+    }
+
     // ① 新規行作成時の日付を空欄にする
     function addNewItemRow() {
-      const rowId = 'row_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+      const panel = document.getElementById('topControlPanel');
+      if (panel && panel.classList.contains('is-collapsed')) toggleControlPanel();
 
+      const rowId = 'row_' + Date.now() + '_' + Math.floor(Math.random()*1000);
       const item = {
         id: rowId,
         recordNo: '',
@@ -1259,15 +1302,13 @@
       }
     }
 
-    // ① 空欄チェックを外したら自動で操作日の1年後をセットする
+    // ① 空欄チェックを外したら日付を空欄にする
     function onBlankToggle(rowId, checked) {
       const item = itemRows.find(r => r.id === rowId);
       if (item) {
         item.isBlank = checked;
         if (!checked) {
-          const d = new Date();
-          d.setFullYear(d.getFullYear() + 1);
-          item.expiryDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          item.expiryDate = '';
         }
         renderItemRowsUI();
         updatePreview();
@@ -1349,6 +1390,14 @@
       closeQtyModal();
     }
 
+    // レコード番号が G1〜G300 かどうかを判定する関数
+    function isBlueLabelCode(recordNo) {
+      const m = String(recordNo || '').trim().match(/^G(\d+)$/i);
+      if (!m) return false;
+      const num = parseInt(m[1], 10);
+      return num >= 1 && num <= 300;
+    }
+
     function updatePreview() {
       const container = document.getElementById('sheetsContainer');
       container.innerHTML = '';
@@ -1422,6 +1471,9 @@
         if (slot >= startSlotIndex && (slot - startSlotIndex) < sequence.length) {
           const item = sequence[slot - startSlotIndex];
           cell.classList.remove('empty-cell');
+          if (isBlueLabelCode(item.recordNo)) {
+            cell.classList.add('is-blue-label');
+          }
 
           let expText = '';
           if (!item.isBlank && item.expiryDate) {
@@ -1447,13 +1499,12 @@
               <div class="cell-stamp-value-overlay">${escapeHtml(expText)}</div>
             </div>
           `;
+        } else {
+          cell.onclick = function() {
+            startSlotIndex = slot;
+            updatePreview();
+          };
         }
-
-        // 配置済み・空き枠にかかわらず、クリックした位置を開始位置にする
-        cell.onclick = function() {
-          startSlotIndex = slot;
-          updatePreview();
-        };
 
         gridDiv.appendChild(cell);
       }
@@ -1503,6 +1554,7 @@
         '.sheet-a4 { width: 210mm; height: 297mm; background: white; padding-top: 16.5mm; padding-bottom: 16.5mm; padding-left: 13.5mm; padding-right: 13.5mm; page-break-after: avoid !important; overflow: hidden; box-sizing: border-box; }' +
         '.label-grid { display: grid; grid-template-columns: repeat(5, 35.0mm); grid-template-rows: repeat(19, 12.0mm); column-gap: 2.0mm; row-gap: 2.0mm; width: 183.0mm; height: 264.0mm; }' +
         '.label-cell { width: 35.0mm; height: 12.0mm; border-radius: 1.2mm; border: 0.5px solid rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; background: #ffea3b !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
+        '.label-cell.is-blue-label, .label-cell.is-blue-label .cell-code-box { background: #81d4fa !important; }' +
         '.label-cell.empty-cell { background: transparent !important; border: none !important; }' +
         '.cell-row-top { height: 4.2mm; padding: 1.1mm 1.0mm 0.1mm 1.0mm; border-bottom: 0.6px solid #111; display: flex; align-items: center; overflow: hidden; white-space: nowrap; }' +
         '.cell-product-name { font-size: 6.8pt; font-weight: 900; color: #000; white-space: nowrap; line-height: 1.0; letter-spacing: -0.2px; display: inline-block; transform-origin: left center; }' +
